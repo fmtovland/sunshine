@@ -4,9 +4,18 @@ image:
 
 environment:
   matrix:
-    - BUILD_TYPE: Debug
-    - BUILD_TYPE: Release
-    - GCC_VERSION: 8
+    - job_name: VS19 Debug
+        BUILD_TYPE: Debug
+    - job_name: VS19 Release
+        BUILD_TYPE: Release
+    - job_name: Ubuntu
+        
+for:
+  - matrix:
+      only:
+        - job_name: Ubuntu
+        environment:
+            GCC_VERSION: 8
 
 install:
   - sh: sudo apt update
