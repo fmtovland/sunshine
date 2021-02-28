@@ -1,21 +1,11 @@
 image:
-  - Ubuntu
+  - Ubuntu2004
   - Visual Studio 2019
 
 environment:
   matrix:
-    - job_name: VS19 Debug
-        BUILD_TYPE: Debug
-    - job_name: VS19 Release
-        BUILD_TYPE: Release
-    - job_name: Ubuntu
-        
-for:
-  - matrix:
-      only:
-        - job_name: Ubuntu
-        environment:
-            GCC_VERSION: 8
+    - BUILD_TYPE: Debug
+    - BUILD_TYPE: Release
 
 install:
   - sh: sudo apt update
