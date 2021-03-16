@@ -733,32 +733,35 @@ int start_broadcast(broadcast_ctx_t &ctx) {
   }
 
   boost::system::error_code ec;
-  ctx.video_sock.open(udp::v4(), ec);
-  if(ec) {
-    BOOST_LOG(fatal) << "Couldn't open socket for Video server: "sv << ec.message();
 
-    return -1;
+  auto getUdp = config::nvhttp.ip_address_family==6? &udp::v6 : &udp::v4;
+
+  ctx.video_sock.open(getUdp(), ec);
+  if(ec) {
+	BOOST_LOG(fatal) << "Couldn't open socket for Video server: "sv << ec.message();
+
+	return -1;
   }
 
-  ctx.video_sock.bind(udp::endpoint(udp::v4(), VIDEO_STREAM_PORT), ec);
+  ctx.video_sock.bind(udp::endpoint(getUdp(), VIDEO_STREAM_PORT), ec);
   if(ec) {
-    BOOST_LOG(fatal) << "Couldn't bind Video server to port ["sv << VIDEO_STREAM_PORT << "]: "sv << ec.message();
+	BOOST_LOG(fatal) << "Couldn't bind Video server to port ["sv << VIDEO_STREAM_PORT << "]: "sv << ec.message();
 
-    return -1;
+	return -1;
   }
 
-  ctx.audio_sock.open(udp::v4(), ec);
+  ctx.audio_sock.open(getUdp(), ec);
   if(ec) {
-    BOOST_LOG(fatal) << "Couldn't open socket for Audio server: "sv << ec.message();
+	BOOST_LOG(fatal) << "Couldn't open socket for Audio server: "sv << ec.message();
 
-    return -1;
+	return -1;
   }
 
-  ctx.audio_sock.bind(udp::endpoint(udp::v4(), AUDIO_STREAM_PORT), ec);
+  ctx.audio_sock.bind(udp::endpoint(getUdp(), AUDIO_STREAM_PORT), ec);
   if(ec) {
-    BOOST_LOG(fatal) << "Couldn't bind Audio server to port ["sv << AUDIO_STREAM_PORT << "]: "sv << ec.message();
+	BOOST_LOG(fatal) << "Couldn't bind Audio server to port ["sv << AUDIO_STREAM_PORT << "]: "sv << ec.message();
 
-    return -1;
+	return -1;
   }
 
   ctx.video_packets = std::make_shared<video::packet_queue_t::element_type>(30);

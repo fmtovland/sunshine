@@ -60,6 +60,8 @@ struct nvhttp_t {
 
   std::string file_state;
 
+  int ip_address_family;	//4 or 6
+
   std::string external_ip;
 };
 

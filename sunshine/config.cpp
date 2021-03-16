@@ -126,7 +126,8 @@ nvhttp_t nvhttp {
   CERTIFICATE_FILE,
 
   boost::asio::ip::host_name(), // sunshine_name,
-  "sunshine_state.json"s // file_state
+  "sunshine_state.json"s, // file_state
+  4,
 };
 
 input_t input {
@@ -373,6 +374,7 @@ void apply_config(std::unordered_map<std::string, std::string> &&vars) {
   string_f(vars, "audio_sink", audio.sink);
 
   int_between_f(vars, "linux_monitor_id", video.linux_monitor_id, { 0, 32 });
+  int_between_f(vars,"ip_address_family",nvhttp.ip_address_family, {4,6});
 
   string_restricted_f(vars, "origin_pin_allowed", nvhttp.origin_pin_allowed, {
     "pc"sv, "lan"sv, "wan"sv

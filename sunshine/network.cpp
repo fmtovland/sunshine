@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "network.h"
 #include "utility.h"
+#include "config.h"
 
 namespace net {
 using namespace std::literals;
@@ -12,12 +13,13 @@ using namespace std::literals;
 std::pair<std::uint32_t, std::uint32_t> ip_block(const std::string_view &ip);
 
 std::vector<std::pair<std::uint32_t, std::uint32_t>> pc_ips {
-  ip_block("127.0.0.1/32"sv)
+  ip_block("127.0.0.1/32"sv),
+  ip_block("::1/128"sv),	//ipv6 link local, other ipv6 addresses might not work so well
 };
 std::vector<std::tuple<std::uint32_t, std::uint32_t>> lan_ips {
   ip_block("192.168.0.0/16"sv),
   ip_block("172.16.0.0/12"),
-  ip_block("10.0.0.0/8"sv)
+  ip_block("10.0.0.0/8"sv),
 };
 
 std::uint32_t ip(const std::string_view &ip_str) {
@@ -95,10 +97,19 @@ std::string_view to_enum_string(net_e net) {
 }
 
 host_t host_create(ENetAddress &addr, std::size_t peers, std::uint16_t port) {
-  enet_address_set_host(&addr, "0.0.0.0");
-  enet_address_set_port(&addr, port);
+  if(config::nvhttp.ip_address_family == 6)
+  {
+	enet_address_set_host(&addr, "::");
+	enet_address_set_port(&addr, port);
+	return host_t { enet_host_create(AF_INET6, &addr, peers, 1, 0, 0) };
+  }
 
-  return host_t { enet_host_create(AF_INET, &addr, peers, 1, 0, 0) };
+  else
+  {
+	  enet_address_set_host(&addr, "0.0.0.0");
+	  enet_address_set_port(&addr, port);
+	  return host_t { enet_host_create(AF_INET, &addr, peers, 1, 0, 0) };
+  }
 }
 
 void free_host(ENetHost *host) {

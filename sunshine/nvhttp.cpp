@@ -820,7 +820,7 @@ void start(std::shared_ptr<safe::signal_t> shutdown_event) {
   https_server.resource["^/cancel$"]["GET"] = cancel;
 
   https_server.config.reuse_address = true;
-  https_server.config.address = "0.0.0.0"s;
+  https_server.config.address = config::nvhttp.ip_address_family == 6 ? "::"s : "0.0.0.0"s;
   https_server.config.port = PORT_HTTPS;
 
   http_server.default_resource = not_found<SimpleWeb::HTTP>;
@@ -829,7 +829,7 @@ void start(std::shared_ptr<safe::signal_t> shutdown_event) {
   http_server.resource["^/pin/([0-9]+)$"]["GET"] = pin<SimpleWeb::HTTP>;
 
   http_server.config.reuse_address = true;
-  http_server.config.address = "0.0.0.0"s;
+  http_server.config.address = config::nvhttp.ip_address_family == 6 ? "::"s : "0.0.0.0"s;
   http_server.config.port = PORT_HTTP;
 
   try {
