@@ -131,6 +131,7 @@ nvhttp_t nvhttp {
 };
 
 input_t input {
+  true,	//whether the client can control the mouse and keyboard
   2s, // back_button_timeout
   500ms, // key_repeat_delay
   std::chrono::duration<double> { 1 / 24.9 }  // key_repeat_period
@@ -273,7 +274,7 @@ bool to_bool(std::string &boolean) {
     boolean == "enable"sv ||
     (std::find(std::begin(boolean), std::end(boolean), '1') != std::end(boolean));
 }
-void bool_f(std::unordered_map<std::string, std::string> &vars, const std::string  &name, int &input) {
+void bool_f(std::unordered_map<std::string, std::string> &vars, const std::string  &name, bool &input) {
   std::string tmp;
   string_f(vars, name, tmp);
 
@@ -396,6 +397,8 @@ void apply_config(std::unordered_map<std::string, std::string> &&vars) {
   int_between_f(vars, "fec_percentage", stream.fec_percentage, {
     1, 100
   });
+
+  bool_f(vars,"keyboard_enabled",input.keyboard_enabled);
 
   to = std::numeric_limits<int>::min();
   int_f(vars, "back_button_timeout", to);

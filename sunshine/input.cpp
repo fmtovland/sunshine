@@ -368,7 +368,7 @@ void passthrough(std::shared_ptr<input_t> &input, PNV_MULTI_CONTROLLER_PACKET pa
   gamepad.gamepad_state = gamepad_state;
 }
 
-void passthrough_helper(std::shared_ptr<input_t> input, std::vector<std::uint8_t> &&input_data) {
+void passthrough_helper_mkb_enabled(std::shared_ptr<input_t> input, std::vector<std::uint8_t> &&input_data) {
   void *payload = input_data.data();
 
   int input_type = util::endian::big(*(int*)payload);
@@ -397,6 +397,23 @@ void passthrough_helper(std::shared_ptr<input_t> input, std::vector<std::uint8_t
       break;
   }
 }
+
+void passthrough_helper_mkb_disabled(std::shared_ptr<input_t> input, std::vector<std::uint8_t> &&input_data) {
+  void *payload = input_data.data();
+
+  int input_type = util::endian::big(*(int*)payload);
+
+  switch(input_type) {
+	case PACKET_TYPE_MULTI_CONTROLLER:
+	  passthrough(input, (PNV_MULTI_CONTROLLER_PACKET)payload);
+	  break;
+
+	default:
+	  break;
+  }
+}
+
+auto passthrough_helper=config::input.keyboard_enabled ? &passthrough_helper_mkb_enabled:&passthrough_helper_mkb_disabled;
 
 void passthrough(std::shared_ptr<input_t> &input, std::vector<std::uint8_t> &&input_data) {
   task_pool.push(passthrough_helper, input, util::cmove(input_data));
