@@ -10,6 +10,7 @@ extern "C" {
 
 #include "main.h"
 #include "config.h"
+#include "keycodes.h"
 #include "utility.h"
 #include "platform/common.h"
 #include "thread_pool.h"
@@ -368,6 +369,86 @@ void passthrough(std::shared_ptr<input_t> &input, PNV_MULTI_CONTROLLER_PACKET pa
   gamepad.gamepad_state = gamepad_state;
 }
 
+
+void sync_button(unsigned short &buttonFlags, ControllerButton button, bool release)
+{
+	if(!release)
+	{
+		buttonFlags |= button;
+	}
+
+	else
+	{
+		buttonFlags &= ~button;
+	}
+}
+
+void emu_gamepad_passthrough(std::shared_ptr<input_t> &input, PNV_KEYBOARD_PACKET packet) {
+	if(updateGamepads(input->gamepads, input->active_gamepad_state, 1)) {
+	return;
+	}
+	input->active_gamepad_state |= 1;
+	auto &gamepad = input->gamepads[0];
+	platf::gamepad_state_t& emulated_gamepad_state = gamepad.gamepad_state;
+
+	auto constexpr BUTTON_RELEASED = 0x04;
+
+	auto release = packet->keyAction == BUTTON_RELEASED;
+	unsigned short keyCode=packet->keyCode;
+	switch(keyCode)
+	{
+	case KEY_A:
+		emulated_gamepad_state.lsX=release?0:SHRT_MIN;
+		break;
+	case KEY_D:
+		emulated_gamepad_state.lsX=release?0:SHRT_MAX;
+		break;
+	case KEY_W:
+		emulated_gamepad_state.lsY=release?0:SHRT_MAX;
+		break;
+	case KEY_S:
+		emulated_gamepad_state.lsY=release?0:SHRT_MIN;
+		break;
+	case KEY_LEFT:
+		sync_button(emulated_gamepad_state.buttonFlags,BUTTON_LEFT,release);
+		break;
+	case KEY_RIGHT:
+		sync_button(emulated_gamepad_state.buttonFlags,BUTTON_RIGHT,release);
+		break;
+	case KEY_UP:
+		sync_button(emulated_gamepad_state.buttonFlags,BUTTON_UP,release);
+		break;
+	case KEY_DOWN:
+		sync_button(emulated_gamepad_state.buttonFlags,BUTTON_DOWN,release);
+		break;
+	case KEY_J:
+		sync_button(emulated_gamepad_state.buttonFlags,BUTTON_A,release);
+		break;
+	case KEY_K:
+		sync_button(emulated_gamepad_state.buttonFlags,BUTTON_B,release);
+		break;
+	case KEY_L:
+		sync_button(emulated_gamepad_state.buttonFlags,BUTTON_X,release);
+		break;
+	case KEY_SEMICOLON:
+		sync_button(emulated_gamepad_state.buttonFlags,BUTTON_Y,release);
+		break;
+	case KEY_LSHIFT:
+		sync_button(emulated_gamepad_state.buttonFlags,BUTTON_LB,release);
+		break;
+	case KEY_RSHIFT:
+		sync_button(emulated_gamepad_state.buttonFlags,BUTTON_RB,release);
+		break;
+	case KEY_ESC:
+		sync_button(emulated_gamepad_state.buttonFlags,BUTTON_START,release);
+		break;
+	default:
+		break;
+	}
+	platf::gamepad(platf_input,0,emulated_gamepad_state);
+	gamepad.gamepad_state = emulated_gamepad_state;
+}
+
 void passthrough_helper_mkb_enabled(std::shared_ptr<input_t> input, std::vector<std::uint8_t> &&input_data) {
   void *payload = input_data.data();
 
@@ -398,7 +479,32 @@ void passthrough_helper_mkb_enabled(std::shared_ptr<input_t> input, std::vector<
   }
 }
 
-void passthrough_helper_mkb_disabled(std::shared_ptr<input_t> input, std::vector<std::uint8_t> &&input_data) {
+static void passthrough_helper_mkb_emulate(std::shared_ptr<input_t> input, std::vector<std::uint8_t> &&input_data) {
+	void *payload = input_data.data();
+
+	int input_type = util::endian::big(*(int*)payload);
+
+	switch(input_type) {
+	  case PACKET_TYPE_MULTI_CONTROLLER:
+		passthrough(input, (PNV_MULTI_CONTROLLER_PACKET)payload);
+		break;
+
+	case PACKET_TYPE_SCROLL_OR_KEYBOARD:
+	{
+	  char *tmp_input = (char*)payload + 4;
+	  if(tmp_input[0] != 0x0A) {
+		emu_gamepad_passthrough(input, (PNV_KEYBOARD_PACKET)payload);
+	  }
+
+	  break;
+	}
+
+	  default:
+		break;
+	}
+}
+
+static void passthrough_helper_mkb_disabled(std::shared_ptr<input_t> input, std::vector<std::uint8_t> &&input_data) {
   void *payload = input_data.data();
 
   int input_type = util::endian::big(*(int*)payload);
@@ -413,10 +519,29 @@ void passthrough_helper_mkb_disabled(std::shared_ptr<input_t> input, std::vector
   }
 }
 
-auto passthrough_helper=config::input.keyboard_enabled ? &passthrough_helper_mkb_enabled:&passthrough_helper_mkb_disabled;
+void (*passthrough_helper)(std::shared_ptr<input_t>, std::vector<std::uint8_t> &&)=
+		[](std::shared_ptr<input_t> input, std::vector<std::uint8_t> &&input_data)
+{
+	printf("boof\n");
+
+	switch(config::input.keyboard_mode)
+	{
+	case KEYBOARD_ENABLED:
+		passthrough_helper= &passthrough_helper_mkb_enabled;
+		break;
+	case KEYBOARD_EMULATE_GAMEPAD:
+		passthrough_helper= &passthrough_helper_mkb_emulate;
+		break;
+	default:
+		passthrough_helper= &passthrough_helper_mkb_disabled;
+		break;
+	}
+
+	//passthrough_helper(input,input_data);
+};
 
 void passthrough(std::shared_ptr<input_t> &input, std::vector<std::uint8_t> &&input_data) {
-  task_pool.push(passthrough_helper, input, util::cmove(input_data));
+	task_pool.push(passthrough_helper, input, util::cmove(input_data));
 }
 
 void init() {

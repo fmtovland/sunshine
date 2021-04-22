@@ -6,6 +6,8 @@
 #include <bitset>
 #include <optional>
 
+enum KeyboardMode:int {KEYBOARD_DISABLED=0,KEYBOARD_ENABLED=1,KEYBOARD_EMULATE_GAMEPAD=2};
+
 namespace config {
 struct video_t {
   // ffmpeg params
@@ -66,7 +68,7 @@ struct nvhttp_t {
 };
 
 struct input_t {
-  bool keyboard_enabled;
+  int keyboard_mode;
   std::chrono::milliseconds back_button_timeout;
   std::chrono::milliseconds key_repeat_delay;
   std::chrono::duration<double> key_repeat_period;

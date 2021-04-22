@@ -153,6 +153,7 @@ set(SUNSHINE_TARGET_FILES
 	sunshine/thread_safe.h
 	sunshine/sync.h
 	sunshine/round_robin.h
+	sunshine/keycodes.h
 	${PLATFORM_TARGET_FILES})
 
 include_directories(

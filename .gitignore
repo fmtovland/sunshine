@@ -1,5 +1,6 @@
 build
 cmake-build-*
+CMakeLists.txt.user
 .DS_Store
 
 *.swp

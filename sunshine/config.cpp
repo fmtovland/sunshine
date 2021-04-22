@@ -131,7 +131,7 @@ nvhttp_t nvhttp {
 };
 
 input_t input {
-  true,	//whether the client can control the mouse and keyboard
+  KEYBOARD_ENABLED,	//whether to passthrough keyboard and mouse, emulate gamepad, or ignore entirely
   2s, // back_button_timeout
   500ms, // key_repeat_delay
   std::chrono::duration<double> { 1 / 24.9 }  // key_repeat_period
@@ -398,7 +398,9 @@ void apply_config(std::unordered_map<std::string, std::string> &&vars) {
     1, 100
   });
 
-  bool_f(vars,"keyboard_enabled",input.keyboard_enabled);
+  int_between_f(vars,"keyboard_mode",input.keyboard_mode, {
+	0, 3
+  });
 
   to = std::numeric_limits<int>::min();
   int_f(vars, "back_button_timeout", to);
